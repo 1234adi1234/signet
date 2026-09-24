@@ -156,7 +156,6 @@ const ENV_ALLOW = new Set([
  * Add to this list rather than weakening the pattern below.
  */
 const NOT_ENV_IDENTIFIERS = new Set([
-  'DEMO_PROFILES', // packages/types — the shared demo personas
   'RESERVED_HANDLES', // packages/types
   'HANDLE_MAX_LEN', // packages/types
   'BASE_FEE', // @stellar/stellar-sdk constant
