@@ -93,7 +93,7 @@ jobs:
         run: target/${{ matrix.target }}/release/${{ matrix.bin }} --version
 
       - name: Upload simulator artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: simulator-${{ matrix.name }}
           path: target/${{ matrix.target }}/release/${{ matrix.bin }}
@@ -122,7 +122,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Download simulator artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: simulator-artifacts
 
@@ -143,10 +143,10 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           targets=(
-            \"linux   amd64 cli-linux-x64    signet    signet-simulator\"
-            \"linux   arm64 cli-linux-arm64  signet    signet-simulator\"
-            \"darwin  arm64 cli-darwin-arm64 signet    signet-simulator\"
-            \"windows amd64 cli-windows-x64  signet.exe signet-simulator.exe\"
+            "linux   amd64 cli-linux-x64    signet    signet-simulator"
+            "linux   arm64 cli-linux-arm64  signet    signet-simulator"
+            "darwin  arm64 cli-darwin-arm64 signet    signet-simulator"
+            "windows amd64 cli-windows-x64  signet.exe signet-simulator.exe"
           )
           for target in "${targets[@]}"; do
             read -r goos goarch npm_pkg binname simname <<< "$target"

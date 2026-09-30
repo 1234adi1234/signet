@@ -24,12 +24,14 @@ PATCH (0.0.X) -> Backwards-compatible bug fixes, security patches, internal refa
 | **`@signet/indexer`**   | Ingestion worker            | `apps/indexer/package.json`                       | Background worker syncing events to Postgres                                                            |
 | **`@signet/types`**     | Shared type definitions     | `packages/types/package.json`                     | Internal workspace dependency                                                                           |
 
----\n
+---
+
 ## 2. Tagging Conventions
 
 All releases are tracked via Git tags pushed to `main`:
 
-- **Platform Releases**: `vX.Y.Z` or `cli-vX.Y.Z` (e.g. `cli-v0.1.0`) — Tracks coordinated platform and CLI/simulator binary releases.
+- **Platform Releases**: `vX.Y.Z` (e.g. `v0.1.0`) — Tracks coordinated platform deployments.
+- **CLI Releases**: `cli-vX.Y.Z` (e.g. `cli-v0.1.0`) — Tracks `signet` CLI and `signet-simulator` binary releases.
 - **SDK Package Releases**: `sdk-vX.Y.Z` (e.g. `sdk-v0.1.0`) — Tracks npm releases of `@signet/sdk`.
 - **Contract Releases**: `contract-vX.Y.Z` (e.g. `contract-v0.1.0`) — Tracks verified contract build hashes and on-chain deployment references.
 
@@ -56,7 +58,7 @@ node scripts/check-contract-errors.mjs
 cd packages/contracts
 cargo test
 stellar contract build
-cd ../..\
+cd ../..
 ```
 
 ### Phase 2: Update Version Numbers & Changelog
@@ -75,11 +77,17 @@ Create an annotated Git tag and push it to the main repository:
 
 ```bash
 # Tag the release
-git tag -a cli-v0.1.0 -m "Release signet CLI v0.1.0"
-git push origin cli-v0.1.0
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+
+# For SDK specific releases
+git tag -a sdk-vX.Y.Z -m "Release @signet/sdk vX.Y.Z"
+git push origin sdk-vX.Y.Z
 ```
 
-The GitHub Actions workflow `.github/workflows/release-cli.yml` automatically builds native `signet-simulator` binaries across all targets, cross-compiles the Go `signet` CLI, bundles both binaries side-by-side into per-platform archives (`.tar.gz` / `.zip`) and `checksums.txt`, stages npm platform packages, and publishes to GitHub Releases and npm.
+Create a GitHub Release describing the changes and referencing the tag.
+
+Pushing a `cli-vX.Y.Z` tag runs `.github/workflows/release-cli.yml`. It builds native `signet-simulator` binaries on a runner matrix, cross-compiles the Go `signet` CLI, bundles both binaries side by side into per-platform archives (`.tar.gz`, or `.zip` for Windows) plus `checksums.txt`, stages the npm platform packages, and publishes to GitHub Releases and npm (gated on `vars.CLI_RELEASE_ENABLED`).
 
 ### Phase 4: Package & Contract Deployment
 
@@ -87,7 +95,7 @@ The GitHub Actions workflow `.github/workflows/release-cli.yml` automatically bu
    ```bash
    pnpm --filter @signet/sdk publish --access public
    ```
-2. **Deploying / Upgrading Contracts** :
+2. **Deploying / Upgrading Contracts**:
    - Follow the migration procedures in [`docs/CONTRACT_MIGRATION.md`](./CONTRACT_MIGRATION.md) and [`docs/DEPLOYMENT.md`](./DEPLOYMENT.md).
    - Verify on-chain contract initialization (`initialize(admin)`).
    - Update `NEXT_PUBLIC_IDENTITY_REGISTRY_ID` in production environment variables.

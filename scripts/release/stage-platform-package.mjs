@@ -38,6 +38,6 @@ console.log(`Staged ${simDest} into ${packageDir}`);
 const pkgPath = path.join(packageDir, 'package.json');
 const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
 pkg.version = version;
-writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\\n`);
+writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
 
 console.log(`Staged binaries and version into ${pkg.name}@${version}`);
