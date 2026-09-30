@@ -290,8 +290,10 @@ jobs:
       - name: Build web app
         run: pnpm --filter @signet/web build
 
+      # `@db` specs need Postgres and live in `e2e-linked`. Each spec runs in
+      # exactly one lane: this one takes everything else.
       - name: Run e2e smoke tests
-        run: pnpm --filter @signet/web test:e2e
+        run: pnpm --filter @signet/web exec playwright test --grep-invert @db
 
   e2e-linked:
     name: e2e linked flow (Postgres)
@@ -301,7 +303,8 @@ jobs:
     # registry, no RPC — and its specs assert the fallback behaviour that
     # depends on staying that way. This one is the opposite: the claim → link →
     # indexer → profile flow only exists when a database does (#277), so it
-    # needs its own environment rather than changing the shared one.
+    # needs its own environment rather than changing the shared one. Specs opt
+    # in with `@db` in their describe title (#463).
     services:
       postgres:
         image: postgres:16-alpine
@@ -340,4 +343,64 @@ jobs:
         uses: actions/cache@v6
         id: pw-cache
         with:
-          path: ~/.cache/ms-playwri
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('apps/web/package.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @signet/web exec playwright install --with-deps chromium
+
+      - name: Install Playwright browser deps (cached hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @signet/web exec playwright install-deps chromium
+
+      - name: Build web app
+        run: pnpm --filter @signet/web build
+
+      # Every database-backed spec (tagged `@db` in its `describe` title): the
+      # linked flow and the contract page. The contract-page fixture is loaded
+      # by Playwright's globalSetup because DATABASE_URL is set.
+      - name: Run the database-backed e2e
+        run: pnpm --filter @signet/web exec playwright test --grep @db
+
+      # This spec crosses four systems, so a failure is worth more than a log
+      # line: the trace and the page snapshot say which stage broke.
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-linked-artifacts
+          path: |
+            apps/web/test-results
+            apps/web/playwright-report
+          retention-days: 7
+          if-no-files-found: ignore
+
+  security:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6.1.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Advisory for now (does not fail the build) — flip to blocking once the
+      # tree is clean. Tighten the level to `moderate` as you triage.
+      - name: pnpm audit
+        run: pnpm audit --audit-level high || true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: cargo audit
+        run: |
+          cargo install cargo-audit --locked || true
+          (cd packages/contracts && cargo audit) || true
