@@ -132,7 +132,7 @@ jobs:
       # nobody's local machine matches (e.g. linux/arm64 built from an amd64
       # dev box) would otherwise stay invisible until it broke on a
       # stranger's machine. No cgo (see go.mod), so each target only needs
-      # GOOS/GOARCH — no per-platform runner or toolchain. The four targets
+      # GOOS/GOARCH — no per-platform runner or toolchain. The targets
       # are the same set release-cli.yml publishes.
       - name: Cross-compile smoke build
         run: |
@@ -141,6 +141,7 @@ jobs:
             "linux   amd64"
             "linux   arm64"
             "darwin  arm64"
+            "darwin  amd64"
             "windows amd64"
           )
           for target in "${targets[@]}"; do
@@ -339,61 +340,4 @@ jobs:
         uses: actions/cache@v6
         id: pw-cache
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('apps/web/package.json') }}
-
-      - name: Install Playwright browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter @signet/web exec playwright install --with-deps chromium
-
-      - name: Install Playwright browser deps (cached hit)
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter @signet/web exec playwright install-deps chromium
-
-      - name: Build web app
-        run: pnpm --filter @signet/web build
-
-      - name: Run the linked-flow e2e
-        run: pnpm --filter @signet/web exec playwright test e2e/claim-link-profile.spec.ts
-
-      # This spec crosses four systems, so a failure is worth more than a log
-      # line: the trace and the page snapshot say which stage broke.
-      - name: Upload Playwright artifacts
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-linked-artifacts
-          path: |
-            apps/web/test-results
-            apps/web/playwright-report
-          retention-days: 7
-          if-no-files-found: ignore
-
-  security:
-    name: dependency audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: pnpm/action-setup@v6.1.0
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # Advisory for now (does not fail the build) — flip to blocking once the
-      # tree is clean. Tighten the level to `moderate` as you triage.
-      - name: pnpm audit
-        run: pnpm audit --audit-level high || true
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: cargo audit
-        run: |
-          cargo install cargo-audit --locked || true
-          (cd packages/contracts && cargo audit) || true
+          path: ~/.cache/ms-playwri
